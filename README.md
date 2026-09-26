@@ -9,9 +9,9 @@ switch it back on.
 
 ```
 Monitors
-  Left · F24IPS ✓
-  Middle · KG251Q ✓
-  Right · F24IPS
+  Left · DP-3 ✓
+  Middle · DP-4 ✓
+  Right · HDMI-A-2
 ```
 
 Every monitor is on when a session starts. The plugin refuses to switch off

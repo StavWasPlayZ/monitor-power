@@ -213,13 +213,13 @@ menu_block() {
     esac
     # The menu card is narrow and the check mark goes after the label, so
     # the label stays short; the rest goes in the subtitle.
-    label="${where:+$where · }${model%% *}"
+    label="${where:+$where · }$name"
     id="trigger.monitors.${name//./-}"
     printf '  %s: {"icon":"%s","label":%s,"description":%s,"when":%s,"checked":%s,"action":%s},\n' \
       "$(json "$id")" \
       "$icon" \
       "$(json "$label")" \
-      "$(json "$make $model · $name")" \
+      "$(json "$make $model")" \
       "$(json "test -x $ctl && $ctl known $name")" \
       "$(json "$ctl is-on $name")" \
       "$(json "$ctl toggle $name")"
