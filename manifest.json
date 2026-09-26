@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "dev.cstav.omarchy.plugin.monitor-power",
+  "name": "Monitor Power",
+  "version": "1.0.0",
+  "author": "StavWasPlayZ",
+  "license": "MIT",
+  "description": "Switch any one monitor off from Trigger > Monitors in the Omarchy menu, and back on from the menu or a key.",
+  "kinds": [
+    "service"
+  ],
+  "entryPoints": {
+    "service": "Service.qml"
+  }
+}
