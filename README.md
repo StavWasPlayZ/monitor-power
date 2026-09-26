@@ -1,18 +1,13 @@
 # Monitor Power
 
 An [Omarchy](https://omarchy.org/) shell plugin that switches single monitors
-off and back on from the Omarchy menu.
+off and back on.
 
-**Trigger › Monitors** lists every monitor, left to right. A monitor that is on
-has a ✓ next to it. Pick a row to switch that monitor off, and pick it again to
-switch it back on.
-
-```
-Monitors
-  Left · DP-3 ✓
-  Middle · DP-4 ✓
-  Right · HDMI-A-2
-```
+**Trigger › Monitors** in the Omarchy menu opens a map of your monitors, each
+drawn where it sits in your layout and labelled with its connector (`DP-3`,
+`HDMI-A-2`, ...). A monitor that is on has a filled tile; one that is off is
+dim and empty. Click a tile, or pick it with the arrow keys (or h/j/k/l) and
+press Enter or Space, to switch it. Esc closes the map.
 
 Every monitor is on when a session starts. The plugin refuses to switch off
 the last monitor that is still on.
@@ -41,15 +36,15 @@ Hyprland config file) turns switched-off monitors back on.
 
 ## How it works
 
-- **The menu rows.** Plugins cannot add rows to the Omarchy menu at runtime;
+- **The menu row.** Plugins cannot add rows to the Omarchy menu at runtime;
   the menu reads its rows only from JSONC files. So the plugin's service
-  writes one static row per monitor into
+  writes the one Trigger › Monitors row into
   `~/.config/omarchy/extensions/omarchy-menu.jsonc`, between
-  `// >>> monitor-power >>>` markers. It rewrites them when the shell starts
-  and whenever Hyprland reports a monitor it has not seen before. The menu
-  works out each ✓ (`checked`) itself every time it opens. A monitor that is
-  unplugged keeps its row, and the row stays hidden (`when`) until the monitor
-  is back.
+  `// >>> monitor-power >>>` markers, when the shell starts. The row opens the
+  overlay (`omarchy-shell shell summon dev.cstav.omarchy.plugin.monitor-power`).
+- **The map.** `Overlay.qml` draws each connected monitor from
+  `bin/monitor-power json`, scaled to fit. A monitor that is off is drawn at
+  the place it was in when it went off.
 - **Off.** The output is disabled, not blanked with DPMS. A blanked panel can
   fall asleep, drop off the DisplayPort link and reconnect as a new monitor,
   which Hyprland switches back on, every few seconds. A disabled output stays
@@ -74,10 +69,10 @@ bin/monitor-power toggle <output>   off if it is on, on if it is off
 bin/monitor-power off <output>      disable the output
 bin/monitor-power on <output>...    enable them again
 bin/monitor-power is-on <output>    exit 0 when the output is enabled
-bin/monitor-power known <output>    exit 0 when the output is connected
 bin/monitor-power list              every connected output and its state
-bin/monitor-power sync-menu         write the Trigger > Monitors rows
-bin/monitor-power remove-menu       take those rows out again
+bin/monitor-power json              the same, with each output's layout box
+bin/monitor-power install-menu      add the Trigger > Monitors menu row
+bin/monitor-power remove-menu       take that row out again
 ```
 
 Output names are the ones `hyprctl monitors all` prints (`DP-3`, `HDMI-A-2`,
