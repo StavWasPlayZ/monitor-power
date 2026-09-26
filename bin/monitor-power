@@ -48,8 +48,9 @@ monitors() { hyprctl monitors all -j; }
 
 # The state file, but only when it was written by this Hyprland instance.
 # Line one is "instance <signature>"; every other line is
-# "<output> <mode> <position> <scale> <transform>", the output as it was
-# when it went off, so it can come back exactly as it was in one step.
+# "<output> <mode> <position> <scale> <transform> <make and model...>", the
+# output as it was when it went off, so it can come back exactly as it was in
+# one step (and be drawn while it is off).
 state_lines() {
   [[ -f $state_file ]] || return 0
   local first
@@ -95,7 +96,7 @@ cmd_off() {
 
   local spec
   spec=$(monitors | jq -r --arg n "$name" '.[] | select(.name == $n) |
-    "\(.width)x\(.height)@\(.refreshRate * 100 | round / 100) \(.x)x\(.y) \(.scale) \(.transform)"')
+    "\(.width)x\(.height)@\(.refreshRate * 100 | round / 100) \(.x)x\(.y) \(.scale) \(.transform) \(.make)\t\(.model)"')
   { state_lines | awk -v n="$name" '$1 != n'; echo "$name $spec"; } | write_state
   hyprctl eval "hl.monitor({ output = '$name', disabled = true })" >/dev/null
 }
@@ -157,11 +158,17 @@ cmd_list() {
 # pixels, for the overlay to draw. A disabled output has no geometry of its
 # own any more, so its box comes from what `off` recorded; an output that
 # something else disabled has none and gets "geometry": null.
+#
+# An output switched off here is listed even while Hyprland does not list it:
+# around a hotplug (a disabled panel dropping off the link) `monitors all`
+# can briefly leave it out, and without a tile it could not be turned back on.
 cmd_json() {
   local specs
   specs=$(state_lines | jq -R -s '
     split("\n") | map(select(length > 0) | split(" ") | select(length >= 5) |
-      { key: .[0], value: { mode: .[1], position: .[2], scale: .[3], transform: .[4] } }) |
+      (.[5:] | join(" ") | split("\t")) as $label |
+      { key: .[0], value: { mode: .[1], position: .[2], scale: .[3], transform: .[4],
+                            make: ($label[0] // ""), model: ($label[1] // "") } }) |
     from_entries')
   monitors | jq --argjson specs "$specs" '
     def box(w; h; s; t; x; y):
@@ -181,7 +188,10 @@ cmd_json() {
         geometry: (if .disabled
           then (if $specs[.name] then recorded($specs[.name]) else null end)
           else box(.width; .height; .scale; .transform; .x; .y) end)
-      } ]'
+      } ] as $listed |
+    $listed + [ $specs | to_entries[] | select(.key as $n | $listed | all(.name != $n)) |
+      { name: .key, make: .value.make, model: .value.model, focused: false, on: false,
+        geometry: recorded(.value) } ]'
 }
 
 json() { jq -Rn --arg s "$1" '$s'; }

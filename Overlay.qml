@@ -195,16 +195,25 @@ Item {
     root.selectedIndex = (root.selectedIndex + delta + root.monitors.length) % root.monitors.length
   }
 
-  // Pointer hover only takes the cursor once the pointer has moved, so the
-  // card opening under a resting pointer does not steal the keyboard's pick.
+  // Pointer hover only takes the cursor once the pointer has really moved
+  // over the card. The first position seen is only a baseline: the card
+  // opening under a resting pointer, or Hyprland warping the pointer onto the
+  // card because the monitor it was on just went off, must not move the
+  // selection - an Enter right after would switch the wrong monitor.
   property real pointerX: -1
   property real pointerY: -1
+  function forgetPointer() {
+    root.pointerX = -1
+    root.pointerY = -1
+  }
   function selectFromPointer(index, item, position) {
     var x = item.x + position.x
     var y = item.y + position.y
-    if (root.pointerX === x && root.pointerY === y) return
+    var known = root.pointerX >= 0
+    if (known && root.pointerX === x && root.pointerY === y) return
     root.pointerX = x
     root.pointerY = y
+    if (!known) return
     root.cursorActive = true
     root.selectedIndex = index
   }
@@ -229,13 +238,23 @@ Item {
       if (!root.opened) return
       var name = String(event.name || "")
       if (name === "monitoraddedv2" || name === "monitorremovedv2") {
-        if (!reloadThrottle.running) reloadThrottle.start()
+        // The pointer may have been moved off a monitor that just went away.
+        root.forgetPointer()
+        reloadThrottle.restart()
+        followUp.restart()
       }
     }
   }
 
+  // Reload once the events stop, and once more a little later: a reload
+  // right on the event can catch Hyprland halfway through the change.
+  property Timer followUp: Timer {
+    interval: 1500
+    onTriggered: if (root.opened) root.reload()
+  }
+
   property Timer reloadThrottle: Timer {
-    interval: 250
+    interval: 300
     onTriggered: {
       if (!root.opened) return
       root.pending = ({})
@@ -299,8 +318,7 @@ Item {
 
     onVisibleChanged: {
       if (visible) {
-        root.pointerX = -1
-        root.pointerY = -1
+        root.forgetPointer()
         Qt.callLater(function () { keyCatcher.forceActiveFocus() })
       }
     }
@@ -429,7 +447,6 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onEntered: root.selectFromPointer(tile.index, tile, { x: tileMouse.mouseX, y: tileMouse.mouseY })
                 onPositionChanged: function (mouse) { root.selectFromPointer(tile.index, tile, mouse) }
                 onClicked: {
                   root.cursorActive = true
