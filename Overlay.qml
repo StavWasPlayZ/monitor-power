@@ -384,6 +384,19 @@ Item {
                 width: parent.width - Style.space(16)
                 spacing: Style.space(tile.roomy ? 6 : 3)
 
+                // Nerd Font monitor glyph (U+F0379), from the menu's own font.
+                Text {
+                  textFormat: Text.PlainText
+                  width: parent.width
+                  visible: tile.roomy
+                  horizontalAlignment: Text.AlignHCenter
+                  text: "󰍹"
+                  color: tile.textColor
+                  opacity: tile.on ? 0.85 : 0.35
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.iconLarge
+                }
+
                 Text {
                   textFormat: Text.PlainText
                   width: parent.width
